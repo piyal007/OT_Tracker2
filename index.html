@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OT Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-96">
+        <h1 class="text-2xl font-bold text-center mb-6 text-gray-800">OT Tracker</h1>
+        
+        <div class="space-y-4">
+            <div>
+                <label for="salary" class="block text-sm font-medium text-gray-700">Base Salary</label>
+                <input type="number" id="salary" class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 shadow-sm transition-all duration-200 placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 hover:border-blue-400" placeholder="Enter base salary">
+            </div>
+
+            <div>
+                <label for="otRate" class="block text-sm font-medium text-gray-700">OT Rate (per hour)</label>
+                <input type="number" id="otRate" class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 shadow-sm transition-all duration-200 placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 hover:border-blue-400" placeholder="Enter OT rate">
+            </div>
+
+            <div>
+                <label for="hours" class="block text-sm font-medium text-gray-700">OT Hours</label>
+                <input type="number" id="hours" class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 shadow-sm transition-all duration-200 placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 hover:border-blue-400" placeholder="Enter OT hours">
+            </div>
+
+            <button id="otEntryBtn" class="mt-4 w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-6 rounded-lg font-medium shadow-lg transition-all duration-200 hover:from-blue-600 hover:to-blue-700 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 active:transform active:scale-95">
+                Add OT Entry
+            </button>
+
+            <div class="mt-6 space-y-2">
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Total OT Hours:</span>
+                    <span id="totalHours" class="font-semibold">0</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Total OT Pay:</span>
+                    <span id="totalOTPay" class="font-semibold">$0</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Total Salary:</span>
+                    <span id="totalSalary" class="font-semibold">$0</span>
+                </div>
+            </div>
+
+            <button id="resetBtn" class="mt-6 w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-3 px-6 rounded-lg font-medium shadow-lg transition-all duration-200 hover:from-red-600 hover:to-red-700 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 active:transform active:scale-95">
+                Reset All
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const salaryInput = document.getElementById('salary');
+        const otRateInput = document.getElementById('otRate');
+        const hoursInput = document.getElementById('hours');
+        const totalHoursElement = document.getElementById('totalHours');
+        const totalOTPayElement = document.getElementById('totalOTPay');
+        const totalSalaryElement = document.getElementById('totalSalary');
+        const resetBtn = document.getElementById('resetBtn');
+        const otEntryBtn = document.getElementById('otEntryBtn');
+
+        // Load saved data from localStorage
+        function loadSavedData() {
+            const savedData = JSON.parse(localStorage.getItem('otTrackerData')) || { salary: '', otRate: '', entries: [] };
+            salaryInput.value = savedData.salary || '';
+            otRateInput.value = savedData.otRate || '';
+            calculateTotals(savedData.entries || []);
+        }
+
+        // Save data to localStorage
+        function saveData(entries) {
+            const data = {
+                salary: salaryInput.value,
+                otRate: otRateInput.value,
+                entries: entries
+            };
+            localStorage.setItem('otTrackerData', JSON.stringify(data));
+        }
+
+        // Calculate totals
+        function calculateTotals(entries) {
+            const salary = parseFloat(salaryInput.value) || 0;
+            let totalHours = 0;
+            let totalOTPay = 0;
+
+            entries.forEach(entry => {
+                totalHours += entry.hours;
+                totalOTPay += entry.otRate * entry.hours;
+            });
+
+            const totalSalary = salary + totalOTPay;
+
+            totalHoursElement.textContent = totalHours.toFixed(2);
+            totalOTPayElement.textContent = `$${totalOTPay.toFixed(2)}`;
+            totalSalaryElement.textContent = `$${totalSalary.toFixed(2)}`;
+
+            saveData(entries);
+        }
+
+        // Reset all fields and localStorage
+        function resetAll() {
+            localStorage.removeItem('otTrackerData');
+            salaryInput.value = '';
+            otRateInput.value = '';
+            hoursInput.value = '';
+            calculateTotals([]);
+        }
+
+        // Add event listeners
+        salaryInput.addEventListener('input', () => {
+            const savedData = JSON.parse(localStorage.getItem('otTrackerData')) || { entries: [] };
+            calculateTotals(savedData.entries);
+        });
+
+        otRateInput.addEventListener('input', () => {
+            const savedData = JSON.parse(localStorage.getItem('otTrackerData')) || { entries: [] };
+            calculateTotals(savedData.entries);
+        });
+
+        otEntryBtn.addEventListener('click', () => {
+            const otRate = parseFloat(otRateInput.value);
+            const hours = parseFloat(hoursInput.value);
+
+            if (otRate && hours) {
+                const savedData = JSON.parse(localStorage.getItem('otTrackerData')) || { entries: [] };
+                savedData.entries = savedData.entries || [];
+                savedData.entries.push({ otRate, hours });
+                
+                calculateTotals(savedData.entries);
+                
+                // Only clear hours input after adding entry
+                hoursInput.value = '';
+            }
+        });
+
+        resetBtn.addEventListener('click', resetAll);
+
+        // Load saved data on page load
+        loadSavedData();
+    </script>
+</body>
+</html>
